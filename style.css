@@ -1,220 +1,25 @@
 body {
-    margin: 0;
-    padding: 12px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #12181b;
+    background: #12181b;
     color: #f5f6fa;
-}
-
-.placeholder-card, .sheet-card {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.placeholder-card {
-    text-align: center;
-    padding: 30px 10px;
-    background: #1e272e;
-    border-radius: 8px;
-    border: 1px dashed #485460;
-}
-
-.placeholder-card .icon {
-    font-size: 32px;
-    margin-bottom: 8px;
-}
-
-/* Seleção de Papel */
-.role-btn {
-    padding: 12px;
-    font-size: 14px;
-    font-weight: bold;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    color: #fff;
-}
-.role-btn.player { background-color: #0984e3; }
-.role-btn.gm { background-color: #d63031; }
-.role-btn:hover { opacity: 0.9; }
-
-/* Cabeçalho da Ficha */
-.sheet-header {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    background: #1e272e;
+    font-family: Arial, sans-serif;
     padding: 10px;
-    border-radius: 6px;
-}
-.header-top {
-    display: flex;
-    gap: 6px;
-}
-.name-input {
-    flex: 1;
-    font-size: 16px;
-    font-weight: bold;
-    padding: 6px;
-    background: #2c3a47;
-    border: 1px solid #3c6382;
-    color: #fff;
-    border-radius: 4px;
-}
-.back-btn {
-    background: #2c3a47;
-    border: 1px solid #485460;
-    border-radius: 4px;
-    cursor: pointer;
-    padding: 0 10px;
-}
-.role-badge {
-    align-self: flex-start;
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-}
-.player-badge { background: #0984e3; color: #fff; }
-.gm-badge { background: #d63031; color: #fff; }
-
-/* Abordagens */
-.approaches-section h3 {
-    margin: 0 0 8px 0;
-    font-size: 12px;
-    color: #00d2d3;
-}
-.approach-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-}
-.approach-card {
-    background: #1e272e;
-    padding: 6px 8px;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.approach-info {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-}
-.app-label { font-weight: bold; color: #00d2d3; }
-.app-fullname { color: #b2bec3; }
-
-.approach-action {
-    display: flex;
-    gap: 4px;
-}
-.approach-val {
-    width: 35px;
-    text-align: center;
-    background: #2c3a47;
-    border: 1px solid #485460;
-    color: #fff;
-    border-radius: 4px;
-}
-.roll-btn {
-    flex: 1;
-    background: #00b894;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 11px;
-    padding: 4px;
-}
-.roll-btn:hover { background: #55efc4; color: #2d3436; }
-
-/* Secções Dinâmicas (Aspectos, Técnicas, Falhas) */
-.dynamic-sections {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.box-section {
-    background: #1e272e;
-    padding: 8px;
-    border-radius: 6px;
-}
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-}
-.section-header h3 {
     margin: 0;
-    font-size: 12px;
-    color: #fdcb6e;
 }
-.add-item-btn {
-    background: #2c3a47;
-    color: #00d2d3;
-    border: 1px solid #00d2d3;
-    border-radius: 4px;
-    font-size: 10px;
-    cursor: pointer;
-    padding: 2px 6px;
-}
-.item-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-.dynamic-item {
-    display: flex;
-    gap: 6px;
-    background: #2c3a47;
-    padding: 6px;
-    border-radius: 4px;
-    border-left: 4px solid #00d2d3;
-}
-.item-inputs {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.item-title {
-    font-weight: bold;
-    font-size: 12px;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid #485460;
-    padding: 2px;
-}
-.item-desc {
-    background: rgba(0,0,0,0.2);
-    border: none;
-    color: #dfe6e9;
-    font-size: 11px;
-    padding: 4px;
-    resize: vertical;
-    min-height: 30px;
-    border-radius: 2px;
-}
-.item-controls {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-}
-.item-color {
-    background: none;
-    border: none;
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-.delete-item-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-}
+.box { background: #1e272e; padding: 12px; border-radius: 6px; margin-bottom: 8px; }
+.header-row { display: flex; gap: 6px; margin-bottom: 6px; }
+input, textarea { background: #2c3a47; border: 1px solid #485460; color: #fff; padding: 6px; border-radius: 4px; box-sizing: border-box; width: 100%; }
+.btn { border: none; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; color: #fff; }
+.blue { background: #0984e3; }
+.red { background: #d63031; }
+.green { background: #00b894; font-size: 11px; margin-top: 4px; }
+.gray { background: #636e72; }
+.badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; }
+.approach-item { display: flex; justify-content: space-between; align-items: center; background: #2c3a47; padding: 6px; border-radius: 4px; margin-bottom: 4px; font-size: 11px; }
+.approach-right { display: flex; gap: 4px; align-items: center; }
+.app-input { width: 40px; text-align: center; }
+.dynamic-card { display: flex; gap: 6px; background: #2c3a47; padding: 6px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid #00d2d3; }
+.card-inputs { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.c-title { font-weight: bold; font-size: 12px; background: transparent; border: none; border-bottom: 1px solid #485460; }
+.c-desc { font-size: 11px; min-height: 25px; resize: vertical; }
+.card-controls { display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
+.c-color { background: none; border: none; width: 20px; height: 20px; cursor: pointer; }
