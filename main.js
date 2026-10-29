@@ -1,5 +1,5 @@
 OBR.onReady(async () => {
-    console.log("Ao Ashi TTRPG - Sistema Carregado e Pronto");
+    console.log("Ao Ashi TTRPG - Motor Inicializado");
 
     const noSelectionEl = document.getElementById("no-selection");
     const roleSelectionEl = document.getElementById("role-selection");
@@ -14,7 +14,6 @@ OBR.onReady(async () => {
     let currentTokenId = null;
     let isGM = false;
 
-    // Verifica o papel do utilizador na sala
     try {
         const role = await OBR.player.getRole();
         isGM = (role === "GM");
@@ -22,7 +21,7 @@ OBR.onReady(async () => {
             btnGm.style.display = "block";
         }
     } catch (e) {
-        console.log("Erro ao checar papel do jogador:", e);
+        console.log("Erro ao verificar papel:", e);
     }
 
     const approachesData = [
@@ -34,56 +33,56 @@ OBR.onReady(async () => {
         { key: "tec", label: "TEC", name: "Técnica", val: 0 }
     ];
 
-    // Verifica a seleção atual logo ao abrir a extensão
-    checkCurrentSelection();
-
-    // Ouve alterações de seleção na mesa
-    OBR.player.onChange((player) => {
-        handleSelection(player.selection);
+    // Monitorização contínua e robusta da seleção de jogadores na sala
+    OBR.player.onChange(async (player) => {
+        await processSelection(player.selection);
     });
 
-    async function checkCurrentSelection() {
+    // Verificação imediata ao abrir o popover
+    initialCheck();
+
+    async function initialCheck() {
         try {
             const selection = await OBR.player.getSelection();
-            handleSelection(selection);
-        } catch (e) {
-            console.log("Erro ao buscar seleção inicial:", e);
+            await processSelection(selection);
+        } catch (err) {
+            console.log("Erro na verificação inicial de seleção:", err);
         }
     }
 
-    async function handleSelection(selection) {
+    async function processSelection(selection) {
         if (!selection || selection.length === 0) {
             currentTokenId = null;
-            noSelectionEl.style.display = "block";
-            roleSelectionEl.style.display = "none";
-            sheetEl.style.display = "none";
+            if (noSelectionEl) noSelectionEl.style.display = "block";
+            if (roleSelectionEl) roleSelectionEl.style.display = "none";
+            if (sheetEl) sheetEl.style.display = "none";
             return;
         }
 
         currentTokenId = selection[0];
-        
+
         try {
             const items = await OBR.scene.items.getItems([currentTokenId]);
             const token = items[0];
             if (!token) return;
 
-            noSelectionEl.style.display = "none";
+            if (noSelectionEl) noSelectionEl.style.display = "none";
+            
             const meta = token.metadata["com.aoashi.ttrpg/data"] || {};
 
             if (!meta.role) {
-                roleSelectionEl.style.display = "block";
-                sheetEl.style.display = "none";
+                if (roleSelectionEl) roleSelectionEl.style.display = "block";
+                if (sheetEl) sheetEl.style.display = "none";
             } else {
-                roleSelectionEl.style.display = "none";
-                sheetEl.style.display = "block";
+                if (roleSelectionEl) roleSelectionEl.style.display = "none";
+                if (sheetEl) sheetEl.style.display = "block";
                 renderSheet(token);
             }
-        } catch (err) {
-            console.log("Erro ao carregar dados do token:", err);
+        } catch (error) {
+            console.log("Erro ao processar token selecionado:", error);
         }
     }
 
-    // Botões de Escolha de Papel
     if (btnPlayer) btnPlayer.addEventListener("click", () => setTokenRole("Jogador"));
     if (btnGm) btnGm.addEventListener("click", () => setTokenRole("Mestre"));
     if (btnBackRole) btnBackRole.addEventListener("click", () => resetTokenRole());
@@ -93,8 +92,8 @@ OBR.onReady(async () => {
         await updateTokenMeta((meta) => {
             meta.role = roleName;
         });
-        roleSelectionEl.style.display = "none";
-        sheetEl.style.display = "block";
+        if (roleSelectionEl) roleSelectionEl.style.display = "none";
+        if (sheetEl) sheetEl.style.display = "block";
         const items = await OBR.scene.items.getItems([currentTokenId]);
         renderSheet(items[0]);
     }
@@ -104,8 +103,8 @@ OBR.onReady(async () => {
         await updateTokenMeta((meta) => {
             delete meta.role;
         });
-        roleSelectionEl.style.display = "block";
-        sheetEl.style.display = "none";
+        if (roleSelectionEl) roleSelectionEl.style.display = "block";
+        if (sheetEl) sheetEl.style.display = "none";
     }
 
     function renderSheet(token) {
