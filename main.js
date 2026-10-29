@@ -1,5 +1,5 @@
-OBR.onReady(() => {
-    console.log("Ao Ashi TTRPG - Inicialização Direta");
+OBR.onReady(async () => {
+    console.log("Ao Ashi TTRPG - Context Menu Ativo");
 
     const noSelectionEl = document.getElementById("no-selection");
     const roleSelectionEl = document.getElementById("role-selection");
@@ -12,25 +12,60 @@ OBR.onReady(() => {
     const approachGrid = document.getElementById("approach-grid");
 
     let currentTokenId = null;
+    let userRole = "PLAYER";
 
-    // 1. Escuta global de seleção do Owlbear Rodeo
+    try {
+        const role = await OBR.player.getRole();
+        userRole = role; // "GM" ou "PLAYER"
+        if (role === "GM" && btnGm) {
+            btnGm.style.display = "block";
+        }
+    } catch (e) {
+        console.log("Erro ao verificar papel:", e);
+    }
+
+    // Regista o botão "Ficha do Atleta" no menu de contexto (três pontinhos do token)
+    try {
+        await OBR.contextMenu.create({
+            id: "com.aoashi.ttrpg/context-menu",
+            icons: [
+                {
+                    icon: "/icon.png",
+                    label: "Ficha do Atleta",
+                    filter: {
+                        every: [
+                            { key: "type", value: "IMAGE" }
+                        ]
+                    }
+                }
+            ],
+            onClick: async (context) => {
+                const selectedIds = context.items.map(item => item.id);
+                if (selectedIds.length > 0) {
+                    await OBR.player.select(selectedIds);
+                }
+            }
+        });
+    } catch (err) {
+        console.log("Context menu já registado ou erro:", err);
+    }
+
+    // Monitorização da seleção
     OBR.player.onChange(async (player) => {
-        const selection = player.selection;
-        await handleSelectionChange(selection);
+        await handleSelectionChange(player.selection);
     });
 
-    // 2. Verificação imediata no carregamento da janela
+    checkInitialSelection();
+
     async function checkInitialSelection() {
         try {
             const selection = await OBR.player.getSelection();
             await handleSelectionChange(selection);
         } catch (err) {
-            console.error("Erro ao obter seleção inicial:", err);
+            console.error("Erro na seleção inicial:", err);
         }
     }
-    checkInitialSelection();
 
-    // 3. Processador central do token selecionado
     async function handleSelectionChange(selection) {
         if (!selection || selection.length === 0) {
             currentTokenId = null;
@@ -41,7 +76,6 @@ OBR.onReady(() => {
         currentTokenId = selection[0];
 
         try {
-            // Busca o token diretamente na cena atual do Owlbear
             const items = await OBR.scene.items.getItems([currentTokenId]);
             const token = items[0];
 
@@ -50,14 +84,16 @@ OBR.onReady(() => {
                 return;
             }
 
-            // Garante que o metadata existe para evitar erros
-            if (!token.metadata) {
-                token.metadata = {};
-            }
-            
+            if (!token.metadata) token.metadata = {};
             const meta = token.metadata["aoashi/sheet"] || {};
 
-            // Se o token ainda não tem papel definido (Jogador vs Mestre)
+            // Restrição de Mestre: Se a ficha for de Mestre e quem está a ver for um Jogador comum, bloqueia o acesso
+            if (meta.role === "Mestre" && userRole !== "GM") {
+                showState("none");
+                alert("Esta ficha é restrita ao Mestre!");
+                return;
+            }
+
             if (!meta.role) {
                 showState("role");
             } else {
@@ -65,36 +101,28 @@ OBR.onReady(() => {
                 renderSheet(token, meta);
             }
         } catch (error) {
-            console.error("Erro ao carregar o item da cena:", error);
+            console.error("Erro ao carregar token:", error);
         }
     }
 
-    // Alternar estados visuais da interface
     function showState(state) {
         if (noSelectionEl) noSelectionEl.style.display = (state === "none") ? "block" : "none";
         if (roleSelectionEl) roleSelectionEl.style.display = (state === "role") ? "block" : "none";
         if (sheetEl) sheetEl.style.display = (state === "sheet") ? "block" : "none";
     }
 
-    // Botões de escolha de papel
-    if (btnPlayer) {
-        btnPlayer.onclick = () => assignRole("Jogador");
-    }
-    if (btnGm) {
-        // Verifica se é GM para mostrar o botão de Mestre
-        OBR.player.getRole().then(role => {
-            if (role === "GM" && btnGm) {
-                btnGm.style.display = "block";
-            }
-        });
-        btnGm.onclick = () => assignRole("Mestre");
-    }
-    if (btnBackRole) {
-        btnBackRole.onclick = () => assignRole(null); // Reseta o papel
-    }
+    if (btnPlayer) btnPlayer.onclick = () => assignRole("Jogador");
+    if (btnGm) btnGm.onclick = () => assignRole("Mestre");
+    if (btnBackRole) btnBackRole.onclick = () => assignRole(null);
 
     async function assignRole(roleName) {
         if (!currentTokenId) return;
+
+        // Se for jogador comum, não pode criar ficha de Mestre
+        if (roleName === "Mestre" && userRole !== "GM") {
+            alert("Apenas o Mestre pode criar uma ficha de Mestre!");
+            return;
+        }
 
         await OBR.scene.items.updateItems([currentTokenId], (items) => {
             for (let item of items) {
@@ -109,12 +137,10 @@ OBR.onReady(() => {
             }
         });
 
-        // Reavalia a seleção atual
         const selection = await OBR.player.getSelection();
         await handleSelectionChange(selection);
     }
 
-    // Renderiza a ficha do atleta
     function renderSheet(token, meta) {
         if (nameInput) {
             nameInput.value = meta.name || token.text?.plainText || token.name || "Atleta";
@@ -157,7 +183,6 @@ OBR.onReady(() => {
                 approachGrid.appendChild(div);
             });
 
-            // Atualizar valores das abordagens em tempo real
             approachGrid.querySelectorAll(".approach-val").forEach(input => {
                 input.oninput = async (e) => {
                     const key = e.target.dataset.key;
@@ -169,7 +194,6 @@ OBR.onReady(() => {
                 };
             });
 
-            // Sistema de Rolagem 4DF
             approachGrid.querySelectorAll(".roll-btn").forEach(btn => {
                 btn.onclick = (e) => {
                     const label = e.target.dataset.label;
@@ -181,18 +205,16 @@ OBR.onReady(() => {
             });
         }
 
-        // Renderizar listas dinâmicas (Aspectos, Técnicas, Falhas)
         renderDynamicList("aspects", meta.aspects || [], false);
         renderDynamicList("techniques", meta.techniques || [], true);
         renderDynamicList("flaws", meta.flaws || [], false);
     }
 
-    // Lógica de Rolagem 4DF Fate Acelerado
     function execute4DFRoll(label, bonus, isGm) {
         let results = [];
         let sum = 0;
         for (let i = 0; i < 4; i++) {
-            const r = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
+            const r = Math.floor(Math.random() * 3) - 1;
             results.push(r);
             sum += r;
         }
@@ -210,7 +232,6 @@ OBR.onReady(() => {
         }
     }
 
-    // Manipulador de secções dinâmicas (Aspectos, Técnicas, Falhas)
     function renderDynamicList(type, itemsList, allowColor) {
         const container = document.getElementById(`container-${type}`);
         if (!container) return;
@@ -234,7 +255,6 @@ OBR.onReady(() => {
             container.appendChild(card);
         });
 
-        // Eventos de alteração de texto e cor
         container.querySelectorAll("input, textarea").forEach(el => {
             el.oninput = async (e) => {
                 const t = e.target.dataset.type;
@@ -256,7 +276,6 @@ OBR.onReady(() => {
             };
         });
 
-        // Evento de apagar item
         container.querySelectorAll(".delete-btn").forEach(btn => {
             btn.onclick = async (e) => {
                 const t = e.target.dataset.type;
@@ -270,7 +289,6 @@ OBR.onReady(() => {
         });
     }
 
-    // Botão Adicionar Item Dinâmico
     document.querySelectorAll(".add-item-btn").forEach(btn => {
         btn.onclick = async (e) => {
             const target = e.target.dataset.target;
@@ -292,7 +310,6 @@ OBR.onReady(() => {
         };
     }
 
-    // Atualizador seguro de metadados do token
     async function updateTokenData(updater) {
         if (!currentTokenId) return;
         await OBR.scene.items.updateItems([currentTokenId], (items) => {
