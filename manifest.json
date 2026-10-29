@@ -6,7 +6,6 @@
   "action": {
     "title": "Ficha do Atleta",
     "icon": "/icon.png",
-    "popover": "popup",
-    "popup": "/index.html"
+    "popover": "/index.html"
   }
 }
