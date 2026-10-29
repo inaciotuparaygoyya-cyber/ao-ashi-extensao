@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Ao Ashi TTRPG",
   "version": "1.0.0",
-  "description": "Ficha minimalista para campanha de futebol inspirada em Ao Ashi.",
+  "description": "Ficha do Atleta para campanha inspirada em Ao Ashi.",
   "action": {
     "title": "Ficha do Atleta",
     "icon": "/icon.png",
