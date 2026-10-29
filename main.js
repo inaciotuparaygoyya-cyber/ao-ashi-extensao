@@ -1,5 +1,5 @@
 OBR.onReady(async () => {
-    console.log("Ao Ashi TTRPG - Context Menu Ativo");
+    console.log("Ao Ashi TTRPG - Pronto");
 
     const noSelectionEl = document.getElementById("no-selection");
     const roleSelectionEl = document.getElementById("role-selection");
@@ -24,35 +24,7 @@ OBR.onReady(async () => {
         console.log("Erro ao verificar papel:", e);
     }
 
-    // Regista o botão no menu de contexto (três pontinhos do token)
-    try {
-        await OBR.contextMenu.create({
-            id: "com.aoashi.ttrpg/context-menu",
-            icons: [
-                {
-                    icon: "/icon.png",
-                    label: "Ficha do Atleta",
-                    filter: {
-                        every: [
-                            { key: "type", value: "IMAGE" }
-                        ]
-                    }
-                }
-            ],
-            onClick: async (context) => {
-                const selectedIds = context.items.map(item => item.id);
-                if (selectedIds.length > 0) {
-                    await OBR.player.select(selectedIds);
-                    // Força a abertura ou atualização do popover se necessário
-                }
-            }
-        });
-        console.log("Context Menu registado com sucesso!");
-    } catch (err) {
-        console.log("Erro ao registar Context Menu (pode já estar ativo):", err);
-    }
-
-    // Monitorização de seleções
+    // Monitorização de seleção na mesa
     OBR.player.onChange(async (player) => {
         await handleSelectionChange(player.selection);
     });
