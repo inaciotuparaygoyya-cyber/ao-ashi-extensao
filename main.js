@@ -16,7 +16,7 @@ OBR.onReady(async () => {
 
     try {
         const role = await OBR.player.getRole();
-        userRole = role; // "GM" ou "PLAYER"
+        userRole = role;
         if (role === "GM" && btnGm) {
             btnGm.style.display = "block";
         }
@@ -24,7 +24,7 @@ OBR.onReady(async () => {
         console.log("Erro ao verificar papel:", e);
     }
 
-    // Regista o botão "Ficha do Atleta" no menu de contexto (três pontinhos do token)
+    // Regista o botão no menu de contexto (três pontinhos do token)
     try {
         await OBR.contextMenu.create({
             id: "com.aoashi.ttrpg/context-menu",
@@ -43,14 +43,16 @@ OBR.onReady(async () => {
                 const selectedIds = context.items.map(item => item.id);
                 if (selectedIds.length > 0) {
                     await OBR.player.select(selectedIds);
+                    // Força a abertura ou atualização do popover se necessário
                 }
             }
         });
+        console.log("Context Menu registado com sucesso!");
     } catch (err) {
-        console.log("Context menu já registado ou erro:", err);
+        console.log("Erro ao registar Context Menu (pode já estar ativo):", err);
     }
 
-    // Monitorização da seleção
+    // Monitorização de seleções
     OBR.player.onChange(async (player) => {
         await handleSelectionChange(player.selection);
     });
@@ -87,7 +89,7 @@ OBR.onReady(async () => {
             if (!token.metadata) token.metadata = {};
             const meta = token.metadata["aoashi/sheet"] || {};
 
-            // Restrição de Mestre: Se a ficha for de Mestre e quem está a ver for um Jogador comum, bloqueia o acesso
+            // Restrição de Mestre: Se a ficha for de Mestre e quem está a ver for um Jogador comum, bloqueia
             if (meta.role === "Mestre" && userRole !== "GM") {
                 showState("none");
                 alert("Esta ficha é restrita ao Mestre!");
@@ -118,7 +120,6 @@ OBR.onReady(async () => {
     async function assignRole(roleName) {
         if (!currentTokenId) return;
 
-        // Se for jogador comum, não pode criar ficha de Mestre
         if (roleName === "Mestre" && userRole !== "GM") {
             alert("Apenas o Mestre pode criar uma ficha de Mestre!");
             return;
