@@ -1,5 +1,5 @@
-OBR.onReady(async () => {
-    console.log("Ao Ashi TTRPG - Motor Inicializado");
+OBR.onReady(() => {
+    console.log("Ao Ashi TTRPG - Inicialização Direta");
 
     const noSelectionEl = document.getElementById("no-selection");
     const roleSelectionEl = document.getElementById("role-selection");
@@ -12,114 +12,134 @@ OBR.onReady(async () => {
     const approachGrid = document.getElementById("approach-grid");
 
     let currentTokenId = null;
-    let isGM = false;
 
-    try {
-        const role = await OBR.player.getRole();
-        isGM = (role === "GM");
-        if (isGM && btnGm) {
-            btnGm.style.display = "block";
-        }
-    } catch (e) {
-        console.log("Erro ao verificar papel:", e);
-    }
-
-    const approachesData = [
-        { key: "vis", label: "VIS", name: "Visão", val: 0 },
-        { key: "fis", label: "FIS", name: "Físico", val: 0 },
-        { key: "con", label: "CON", name: "Condução", val: 0 },
-        { key: "gar", label: "GAR", name: "Garra", val: 0 },
-        { key: "ins", label: "INS", name: "Instinto", val: 0 },
-        { key: "tec", label: "TEC", name: "Técnica", val: 0 }
-    ];
-
-    // Monitorização contínua e robusta da seleção de jogadores na sala
+    // 1. Escuta global de seleção do Owlbear Rodeo
     OBR.player.onChange(async (player) => {
-        await processSelection(player.selection);
+        const selection = player.selection;
+        await handleSelectionChange(selection);
     });
 
-    // Verificação imediata ao abrir o popover
-    initialCheck();
-
-    async function initialCheck() {
+    // 2. Verificação imediata no carregamento da janela
+    async function checkInitialSelection() {
         try {
             const selection = await OBR.player.getSelection();
-            await processSelection(selection);
+            await handleSelectionChange(selection);
         } catch (err) {
-            console.log("Erro na verificação inicial de seleção:", err);
+            console.error("Erro ao obter seleção inicial:", err);
         }
     }
+    checkInitialSelection();
 
-    async function processSelection(selection) {
+    // 3. Processador central do token selecionado
+    async function handleSelectionChange(selection) {
         if (!selection || selection.length === 0) {
             currentTokenId = null;
-            if (noSelectionEl) noSelectionEl.style.display = "block";
-            if (roleSelectionEl) roleSelectionEl.style.display = "none";
-            if (sheetEl) sheetEl.style.display = "none";
+            showState("none");
             return;
         }
 
         currentTokenId = selection[0];
 
         try {
+            // Busca o token diretamente na cena atual do Owlbear
             const items = await OBR.scene.items.getItems([currentTokenId]);
             const token = items[0];
-            if (!token) return;
 
-            if (noSelectionEl) noSelectionEl.style.display = "none";
+            if (!token) {
+                showState("none");
+                return;
+            }
+
+            // Garante que o metadata existe para evitar erros
+            if (!token.metadata) {
+                token.metadata = {};
+            }
             
-            const meta = token.metadata["com.aoashi.ttrpg/data"] || {};
+            const meta = token.metadata["aoashi/sheet"] || {};
 
+            // Se o token ainda não tem papel definido (Jogador vs Mestre)
             if (!meta.role) {
-                if (roleSelectionEl) roleSelectionEl.style.display = "block";
-                if (sheetEl) sheetEl.style.display = "none";
+                showState("role");
             } else {
-                if (roleSelectionEl) roleSelectionEl.style.display = "none";
-                if (sheetEl) sheetEl.style.display = "block";
-                renderSheet(token);
+                showState("sheet");
+                renderSheet(token, meta);
             }
         } catch (error) {
-            console.log("Erro ao processar token selecionado:", error);
+            console.error("Erro ao carregar o item da cena:", error);
         }
     }
 
-    if (btnPlayer) btnPlayer.addEventListener("click", () => setTokenRole("Jogador"));
-    if (btnGm) btnGm.addEventListener("click", () => setTokenRole("Mestre"));
-    if (btnBackRole) btnBackRole.addEventListener("click", () => resetTokenRole());
-
-    async function setTokenRole(roleName) {
-        if (!currentTokenId) return;
-        await updateTokenMeta((meta) => {
-            meta.role = roleName;
-        });
-        if (roleSelectionEl) roleSelectionEl.style.display = "none";
-        if (sheetEl) sheetEl.style.display = "block";
-        const items = await OBR.scene.items.getItems([currentTokenId]);
-        renderSheet(items[0]);
+    // Alternar estados visuais da interface
+    function showState(state) {
+        if (noSelectionEl) noSelectionEl.style.display = (state === "none") ? "block" : "none";
+        if (roleSelectionEl) roleSelectionEl.style.display = (state === "role") ? "block" : "none";
+        if (sheetEl) sheetEl.style.display = (state === "sheet") ? "block" : "none";
     }
 
-    async function resetTokenRole() {
-        if (!currentTokenId) return;
-        await updateTokenMeta((meta) => {
-            delete meta.role;
+    // Botões de escolha de papel
+    if (btnPlayer) {
+        btnPlayer.onclick = () => assignRole("Jogador");
+    }
+    if (btnGm) {
+        // Verifica se é GM para mostrar o botão de Mestre
+        OBR.player.getRole().then(role => {
+            if (role === "GM" && btnGm) {
+                btnGm.style.display = "block";
+            }
         });
-        if (roleSelectionEl) roleSelectionEl.style.display = "block";
-        if (sheetEl) sheetEl.style.display = "none";
+        btnGm.onclick = () => assignRole("Mestre");
+    }
+    if (btnBackRole) {
+        btnBackRole.onclick = () => assignRole(null); // Reseta o papel
     }
 
-    function renderSheet(token) {
-        const meta = token.metadata["com.aoashi.ttrpg/data"] || {};
-        if (nameInput) nameInput.value = meta.name || token.text?.plainText || token.name || "Atleta";
-        
+    async function assignRole(roleName) {
+        if (!currentTokenId) return;
+
+        await OBR.scene.items.updateItems([currentTokenId], (items) => {
+            for (let item of items) {
+                if (!item.metadata["aoashi/sheet"]) {
+                    item.metadata["aoashi/sheet"] = {};
+                }
+                if (roleName === null) {
+                    delete item.metadata["aoashi/sheet"].role;
+                } else {
+                    item.metadata["aoashi/sheet"].role = roleName;
+                }
+            }
+        });
+
+        // Reavalia a seleção atual
+        const selection = await OBR.player.getSelection();
+        await handleSelectionChange(selection);
+    }
+
+    // Renderiza a ficha do atleta
+    function renderSheet(token, meta) {
+        if (nameInput) {
+            nameInput.value = meta.name || token.text?.plainText || token.name || "Atleta";
+        }
+
         if (roleBadge) {
             roleBadge.textContent = meta.role || "Jogador";
             roleBadge.className = "role-badge " + (meta.role === "Mestre" ? "gm-badge" : "player-badge");
         }
 
+        const approachesData = [
+            { key: "vis", label: "VIS", name: "Visão" },
+            { key: "fis", label: "FIS", name: "Físico" },
+            { key: "con", label: "CON", name: "Condução" },
+            { key: "gar", label: "GAR", name: "Garra" },
+            { key: "ins", label: "INS", name: "Instinto" },
+            { key: "tec", label: "TEC", name: "Técnica" }
+        ];
+
         if (approachGrid) {
             approachGrid.innerHTML = "";
             approachesData.forEach(app => {
-                const currentVal = meta.approaches?.[app.key] ?? app.val;
+                const vals = meta.approaches || {};
+                const currentVal = vals[app.key] ?? 0;
+
                 const div = document.createElement("div");
                 div.className = "approach-card";
                 div.innerHTML = `
@@ -137,65 +157,69 @@ OBR.onReady(async () => {
                 approachGrid.appendChild(div);
             });
 
+            // Atualizar valores das abordagens em tempo real
             approachGrid.querySelectorAll(".approach-val").forEach(input => {
-                input.addEventListener("input", async (e) => {
+                input.oninput = async (e) => {
                     const key = e.target.dataset.key;
                     const val = Number(e.target.value);
-                    await updateTokenMeta(meta => {
-                        if (!meta.approaches) meta.approaches = {};
-                        meta.approaches[key] = val;
+                    await updateTokenData(item => {
+                        if (!item.approaches) item.approaches = {};
+                        item.approaches[key] = val;
                     });
-                });
+                };
             });
 
+            // Sistema de Rolagem 4DF
             approachGrid.querySelectorAll(".roll-btn").forEach(btn => {
-                btn.addEventListener("click", async (e) => {
-                    const key = e.target.dataset.key;
+                btn.onclick = (e) => {
                     const label = e.target.dataset.label;
-                    const bonus = meta.approaches?.[key] ?? 0;
-                    roll4DF(label, bonus, meta.role === "Mestre");
-                });
+                    const key = e.target.dataset.key;
+                    const vals = meta.approaches || {};
+                    const bonus = vals[key] ?? 0;
+                    execute4DFRoll(label, bonus, meta.role === "Mestre");
+                };
             });
         }
 
-        renderList("aspects", meta.aspects || []);
-        renderList("techniques", meta.techniques || [], true);
-        renderList("flaws", meta.flaws || []);
+        // Renderizar listas dinâmicas (Aspectos, Técnicas, Falhas)
+        renderDynamicList("aspects", meta.aspects || [], false);
+        renderDynamicList("techniques", meta.techniques || [], true);
+        renderDynamicList("flaws", meta.flaws || [], false);
     }
 
-    async function roll4DF(label, bonus, isGmRole) {
-        let rollResults = [];
-        let rollSum = 0;
+    // Lógica de Rolagem 4DF Fate Acelerado
+    function execute4DFRoll(label, bonus, isGm) {
+        let results = [];
+        let sum = 0;
         for (let i = 0; i < 4; i++) {
-            const r = Math.floor(Math.random() * 3) - 1;
-            rollResults.push(r);
-            rollSum += r;
+            const r = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
+            results.push(r);
+            sum += r;
         }
-        const total = rollSum + bonus;
+        const total = sum + bonus;
         const formattedTotal = total >= 0 ? `+${total}` : `${total}`;
-        const detailStr = rollResults.map(r => r > 0 ? '[+]' : r < 0 ? '[-]' : '[ ]').join(' ');
-
+        const detailStr = results.map(r => r > 0 ? '[+]' : r < 0 ? '[-]' : '[ ]').join(' ');
         const athleteName = nameInput ? nameInput.value : "Atleta";
-        const chatMessage = `⚽ [${label}] ${athleteName} rolou 4DF: ${detailStr} (Mod: ${bonus >= 0 ? '+' + bonus : bonus}) ➔ **Resultado: ${formattedTotal}**`;
 
-        if (isGmRole) {
-            await OBR.room.setMetadata({ "com.aoashi.ttrpg/last-roll": { secret: true, text: chatMessage, time: Date.now() } });
-            alert(`[Rolagem Oculta do Mestre]\n${chatMessage}`);
+        const msg = `⚽ [${label}] ${athleteName} rolou 4DF: ${detailStr} (Mod: ${bonus >= 0 ? '+' + bonus : bonus}) ➔ **Resultado: ${formattedTotal}**`;
+
+        if (isGm) {
+            alert(`[Rolagem Oculta do Mestre]\n${msg}`);
         } else {
-            await OBR.room.setMetadata({ "com.aoashi.ttrpg/last-roll": { secret: false, text: chatMessage, time: Date.now() } });
-            alert(`${chatMessage}`);
+            alert(msg);
         }
     }
 
-    function renderList(type, items, allowCustomColor = false) {
+    // Manipulador de secções dinâmicas (Aspectos, Técnicas, Falhas)
+    function renderDynamicList(type, itemsList, allowColor) {
         const container = document.getElementById(`container-${type}`);
         if (!container) return;
         container.innerHTML = "";
 
-        items.forEach((item, index) => {
+        itemsList.forEach((item, index) => {
             const card = document.createElement("div");
             card.className = "dynamic-item";
-            card.style.borderColor = item.color || "#485460";
+            card.style.borderColor = item.color || "#00d2d3";
 
             card.innerHTML = `
                 <div class="item-inputs">
@@ -203,73 +227,80 @@ OBR.onReady(async () => {
                     <textarea class="item-desc" placeholder="Descrição..." data-type="${type}" data-index="${index}">${item.desc || ''}</textarea>
                 </div>
                 <div class="item-controls">
-                    ${allowCustomColor ? `<input type="color" class="item-color" value="${item.color || '#00d2d3'}" data-type="${type}" data-index="${index}" title="Mudar cor da letra">` : ''}
-                    <button class="delete-item-btn" data-type="${type}" data-index="${index}">🗑️</button>
+                    ${allowColor ? `<input type="color" class="item-color" value="${item.color || '#00d2d3'}" data-type="${type}" data-index="${index}">` : ''}
+                    <button class="delete-btn" data-type="${type}" data-index="${index}">🗑️</button>
                 </div>
             `;
             container.appendChild(card);
         });
 
+        // Eventos de alteração de texto e cor
         container.querySelectorAll("input, textarea").forEach(el => {
-            el.addEventListener("input", async (e) => {
+            el.oninput = async (e) => {
                 const t = e.target.dataset.type;
                 const idx = Number(e.target.dataset.index);
-                const field = e.target.classList.contains("item-title") ? "title" : e.target.classList.contains("item-color") ? "color" : "desc";
-                
-                await updateTokenMeta(meta => {
-                    if (!meta[t]) meta[t] = [];
-                    if (!meta[t][idx]) meta[t][idx] = { title: "", desc: "", color: "#ffffff" };
-                    meta[t][idx][field] = e.target.value;
-                    if (field === "color") {
-                        const titleInput = container.querySelectorAll(".item-title")[idx];
-                        if (titleInput) titleInput.style.color = e.target.value;
+                const isColor = e.target.classList.contains("item-color");
+                const isTitle = e.target.classList.contains("item-title");
+                const field = isColor ? "color" : (isTitle ? "title" : "desc");
+
+                await updateTokenData(item => {
+                    if (!item[t]) item[t] = [];
+                    if (!item[t][idx]) item[t][idx] = { title: "", desc: "", color: "#00d2d3" };
+                    item[t][idx][field] = e.target.value;
+
+                    if (isColor) {
+                        const titleField = container.querySelectorAll(".item-title")[idx];
+                        if (titleField) titleField.style.color = e.target.value;
                     }
                 });
-            });
+            };
         });
 
-        container.querySelectorAll(".delete-item-btn").forEach(btn => {
-            btn.addEventListener("click", async (e) => {
+        // Evento de apagar item
+        container.querySelectorAll(".delete-btn").forEach(btn => {
+            btn.onclick = async (e) => {
                 const t = e.target.dataset.type;
                 const idx = Number(e.target.dataset.index);
-                await updateTokenMeta(meta => {
-                    if (meta[t]) meta[t].splice(idx, 1);
+                await updateTokenData(item => {
+                    if (item[t]) item[t].splice(idx, 1);
                 });
-                const items = await OBR.scene.items.getItems([currentTokenId]);
-                renderSheet(items[0]);
-            });
+                const selection = await OBR.player.getSelection();
+                await handleSelectionChange(selection);
+            };
         });
     }
 
+    // Botão Adicionar Item Dinâmico
     document.querySelectorAll(".add-item-btn").forEach(btn => {
-        btn.addEventListener("click", async (e) => {
-            const targetType = e.target.dataset.target;
-            await updateTokenMeta(meta => {
-                if (!meta[targetType]) meta[targetType] = [];
-                meta[targetType].push({ title: "", desc: "", color: "#00d2d3" });
+        btn.onclick = async (e) => {
+            const target = e.target.dataset.target;
+            await updateTokenData(item => {
+                if (!item[target]) item[target] = [];
+                item[target].push({ title: "", desc: "", color: "#00d2d3" });
             });
-            const items = await OBR.scene.items.getItems([currentTokenId]);
-            renderSheet(items[0]);
-        });
+            const selection = await OBR.player.getSelection();
+            await handleSelectionChange(selection);
+        };
     });
 
     if (nameInput) {
-        nameInput.addEventListener("input", async (e) => {
+        nameInput.oninput = async (e) => {
             const val = e.target.value;
-            await updateTokenMeta(meta => {
-                meta.name = val;
+            await updateTokenData(item => {
+                item.name = val;
             });
-        });
+        };
     }
 
-    async function updateTokenMeta(updateFn) {
+    // Atualizador seguro de metadados do token
+    async function updateTokenData(updater) {
         if (!currentTokenId) return;
         await OBR.scene.items.updateItems([currentTokenId], (items) => {
             for (let item of items) {
-                if (!item.metadata["com.aoashi.ttrpg/data"]) {
-                    item.metadata["com.aoashi.ttrpg/data"] = {};
+                if (!item.metadata["aoashi/sheet"]) {
+                    item.metadata["aoashi/sheet"] = {};
                 }
-                updateFn(item.metadata["com.aoashi.ttrpg/data"]);
+                updater(item.metadata["aoashi/sheet"]);
             }
         });
     }
