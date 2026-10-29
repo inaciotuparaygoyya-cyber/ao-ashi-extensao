@@ -7,9 +7,5 @@
     "title": "Ficha do Atleta",
     "icon": "/icon.png",
     "popover": "/index.html"
-  },
-  "permissions": [
-    "CONTEXT_MENU",
-    "SCENE"
-  ]
+  }
 }
