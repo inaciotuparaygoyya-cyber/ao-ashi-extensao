@@ -1,0 +1,11 @@
+{
+  "name": "Ao Ashi TTRPG",
+  "version": "1.0.0",
+  "description": "Ficha minimalista para campanha de futebol inspirada em Ao Ashi.",
+  "action": {
+    "icon": "/icon.png",
+    "label": "Ficha do Atleta",
+    "popover": true,
+    "url": "/index.html"
+  }
+}
