@@ -3,77 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ao Ashi - Shuuto TTRPG</title>
+    <title>Ao Ashi - Shuuto</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Estado: Nenhum token selecionado -->
-        <div id="no-selection" class="placeholder-card">
-            <div class="icon">⚽</div>
-            <h3>Ao Ashi - Shuuto</h3>
-            <p>Seleciona um token na mesa para abrir a ficha do atleta.</p>
+        <!-- Aviso se nenhum token estiver selecionado -->
+        <div id="no-selection" class="box">
+            <h3>⚽ Nenhum Token Selecionado</h3>
+            <p>Clica num token na mesa do Owlbear Rodeo e abre a extensão novamente.</p>
         </div>
 
-        <!-- Estado 1: Seleção do Tipo de Ficha (Jogador vs Mestre) -->
-        <div id="role-selection" class="sheet-card" style="display: none;">
-            <h2>Tipo de Ficha</h2>
-            <p>Escolhe o teu papel para este token:</p>
-            <button class="role-btn player" id="btn-player">Atleta - Jogador</button>
-            <button class="role-btn gm" id="btn-gm" style="display: none;">Atleta - Mestre (GM)</button>
+        <!-- Escolha de Papel (Jogador vs Mestre) -->
+        <div id="role-selection" class="box" style="display: none;">
+            <h3>Papel do Atleta</h3>
+            <p>Escolhe quem comanda este token:</p>
+            <button id="btn-player" class="btn blue">Atleta - Jogador</button>
+            <button id="btn-gm" class="btn red" style="display: none;">Atleta - Mestre (GM)</button>
         </div>
 
-        <!-- Estado 2: Ficha Ativa do Atleta -->
-        <div id="character-sheet" class="sheet-card" style="display: none;">
-            <header class="sheet-header">
-                <div class="header-top">
-                    <input type="text" id="athlete-name" class="name-input" placeholder="Nome do Atleta">
-                    <button id="btn-back-role" class="back-btn" title="Mudar Papel">⚙️</button>
-                </div>
-                <div class="role-badge" id="active-role-badge">Jogador</div>
-            </header>
-
-            <!-- Abordagens Fate Acelerado (4DF) -->
-            <section class="approaches-section">
-                <h3>Abordagens</h3>
-                <div class="approach-grid" id="approach-grid">
-                    <!-- Gerado via JS para suportar rolagens 4DF -->
-                </div>
-            </section>
-
-            <!-- Seções Dinâmicas: Aspectos, Técnicas, Falhas -->
-            <div class="dynamic-sections">
-                <!-- Aspectos -->
-                <div class="box-section">
-                    <div class="section-header">
-                        <h3>Aspectos</h3>
-                        <button class="add-item-btn" data-target="aspects">+ Adicionar</button>
-                    </div>
-                    <div id="container-aspects" class="item-list"></div>
-                </div>
-
-                <!-- Técnicas -->
-                <div class="box-section">
-                    <div class="section-header">
-                        <h3>Técnicas</h3>
-                        <button class="add-item-btn" data-target="techniques">+ Adicionar</button>
-                    </div>
-                    <div id="container-techniques" class="item-list"></div>
-                </div>
-
-                <!-- Falhas -->
-                <div class="box-section">
-                    <div class="section-header">
-                        <h3>Falhas</h3>
-                        <button class="add-item-btn" data-target="flaws">+ Adicionar</button>
-                    </div>
-                    <div id="container-flaws" class="item-list"></div>
-                </div>
+        <!-- Ficha Principal -->
+        <div id="character-sheet" class="box" style="display: none;">
+            <div class="header-row">
+                <input type="text" id="athlete-name" placeholder="Nome do Atleta">
+                <button id="btn-reset" class="btn gray" title="Trocar Papel">⚙️</button>
             </div>
+            <div id="role-badge" class="badge">Jogador</div>
+
+            <!-- Abordagens Fate Acelerado -->
+            <h4>Abordagens (4DF)</h4>
+            <div id="approach-list"></div>
+
+            <!-- Aspectos, Técnicas e Falhas -->
+            <h4>Aspectos</h4>
+            <div id="container-aspects"></div>
+            <button class="btn green add-btn" data-type="aspects">+ Adicionar Aspecto</button>
+
+            <h4>Técnicas</h4>
+            <div id="container-techniques"></div>
+            <button class="btn green add-btn" data-type="techniques">+ Adicionar Técnica</button>
+
+            <h4>Falhas</h4>
+            <div id="container-flaws"></div>
+            <button class="btn green add-btn" data-type="flaws">+ Adicionar Falha</button>
         </div>
     </div>
 
-    <!-- SDK do Owlbear Rodeo -->
     <script src="https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@latest/dist/omrid.browser.js"></script>
     <script src="/main.js"></script>
 </body>
